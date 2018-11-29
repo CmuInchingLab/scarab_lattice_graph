@@ -6,15 +6,42 @@ using namespace Eigen;
 LatticeMotion::LatticeMotion(const vector<double>& turn_radius,
                              double arc_length)
     : turn_radius_(turn_radius), arc_length_(arc_length) {
-  after_motion_relative_poses_.clear();
+  relative_motion_primitives_.clear();
+
+  uint8_t mid_motion_index = ((this->get_n_branches() - 1) / 2) + 1;
+  uint8_t curr_motion_index = 1;
   for (double radius : turn_radius) {
-    after_motion_relative_poses_.push_back(this->get_after_motion_pose(radius));
+    pose relative_p = this->get_after_motion_pose(radius);
+    motion_primitive relative_motion_mp = {.final_pose = relative_p,
+                                           .turn_radius = radius,
+                                           .arc_length = this->arc_length_,
+                                           .motion_index = curr_motion_index};
+    relative_motion_primitives_.push_back(relative_motion_mp);
+
+    // update curr_motion_index
+    curr_motion_index++;
+    // if middle trajectory, add the middle motion
+    if (curr_motion_index == mid_motion_index) {
+      pose relative_mid = {.x = this->arc_length_, .y = 0, .theta = 0};
+      motion_primitive relative_motion_mp = {.final_pose = relative_mid,
+                                             .turn_radius = DBL_MAX,
+                                             .arc_length = this->arc_length_,
+                                             .motion_index = curr_motion_index};
+      relative_motion_primitives_.push_back(relative_motion_mp);
+
+      // go to the next branch
+      curr_motion_index++;
+    }
   }
 
-  for (pose p : this->after_motion_relative_poses_)
-    cout << p.x << " " << p.y << " " << p.theta << endl;
-
   cout << "LatticeMotion created." << endl;
+  cout << "Relative motion primitives: " << endl;
+  for (motion_primitive mp : this->relative_motion_primitives_)
+    cout << (int)mp.motion_index << ": r = " << mp.turn_radius
+         << "  |  S = " << mp.arc_length
+         << "  |  Pose(x, y, theta) = " << mp.final_pose.x << " "
+         << mp.final_pose.y << " " << mp.final_pose.theta << endl;
+  cout << "---------------------------------------------------" << endl << endl;
 }
 
 LatticeMotion::~LatticeMotion() { cout << "LatticeMotion killed." << endl; }
@@ -29,7 +56,7 @@ pose LatticeMotion::get_after_motion_pose(double radius) {
 }
 
 pose LatticeMotion::to_global_frame(const pose& global_pose,
-                                    pose relative_pose) {
+                                    const pose& relative_pose) {
   MatrixXd T(3, 3);
   T << cos(global_pose.theta), -sin(global_pose.theta), global_pose.x,
       sin(global_pose.theta), cos(global_pose.theta), global_pose.y, 0, 0, 1;
@@ -43,20 +70,18 @@ pose LatticeMotion::to_global_frame(const pose& global_pose,
   return next_pose;
 }
 
-bool LatticeMotion::get_global_successors(const pose& global_pose,
-                                          vector<pose>& global_successors) {
+bool LatticeMotion::get_global_successors(
+    const pose& global_pose, vector<motion_primitive>& global_successors) {
   global_successors.clear();
 
-  // center trajectory successor
-  pose mid = {.x = this->arc_length_, .y = 0, .theta = 0};
-  pose global_mid = this->to_global_frame(global_pose, mid);
-  global_successors.push_back(global_mid);
-
-  // get the rest of the successors
-  for (pose p : after_motion_relative_poses_) {
-    pose global_p = this->to_global_frame(global_pose, p);
-    global_successors.push_back(global_p);
+  // get the relative motion primitives in global frame
+  for (motion_primitive mp : relative_motion_primitives_) {
+    pose global_p = this->to_global_frame(global_pose, mp.final_pose);
+    motion_primitive global_mp = {.final_pose = global_p,
+                                  .turn_radius = mp.turn_radius,
+                                  .arc_length = mp.arc_length,
+                                  .motion_index = mp.motion_index};
+    global_successors.push_back(global_mp);
   }
-
   return true;
 }

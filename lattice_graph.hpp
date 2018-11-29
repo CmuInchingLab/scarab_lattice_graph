@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -25,6 +26,14 @@ struct pose {
   double x, y, theta;
 };
 
+// motion_prim
+struct motion_primitive {
+  pose final_pose;
+  double turn_radius;
+  double arc_length;
+  uint8_t motion_index;
+};
+
 // class for getting successors
 // pass in a vector of turning radius, exclude the forward moving center branch
 class LatticeMotion {
@@ -34,11 +43,11 @@ class LatticeMotion {
 
   // some math
   pose get_after_motion_pose(double radius);
-  pose to_global_frame(const pose& global_pose, pose relative_pose);
+  pose to_global_frame(const pose& global_pose, const pose& relative_pose);
 
   // getting the global successors
   bool get_global_successors(const pose& global_pose,
-                             vector<pose>& global_successors);
+                             vector<motion_primitive>& global_successors);
 
   // no need for edit functions, just create another LatticeMotion object
   // get functions
@@ -50,5 +59,6 @@ class LatticeMotion {
   vector<double> turn_radius_;
   double arc_length_;
 
-  vector<pose> after_motion_relative_poses_;
+  // populated in constructor
+  vector<motion_primitive> relative_motion_primitives_;
 };
