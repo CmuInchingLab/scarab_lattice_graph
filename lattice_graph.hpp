@@ -8,6 +8,9 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 
+// Eigen stuff
+#include "Eigen/Dense"
+
 using namespace std;
 
 // all motion definitions are right-handed
@@ -31,6 +34,7 @@ class LatticeMotion {
 
   // some math
   pose get_after_motion_pose(double radius);
+  pose to_global_frame(const pose& global_pose, pose relative_pose);
 
   // getting the global successors
   bool get_global_successors(const pose& global_pose,

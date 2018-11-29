@@ -1,0 +1,1 @@
+# Scarab Lattice Graph helper classes

@@ -13,8 +13,8 @@ def find_distance(x1, y1, x2, y2):
   return (x1 - x2)**2 + (y1 - y2)**2
 
 if __name__ == "__main__":
-  x = 3
-  y = 3
+  x = 0
+  y = 0
   plt.plot(x, y, 'bx')
 
   # fixed
@@ -30,6 +30,7 @@ if __name__ == "__main__":
   neg_radius = list(np.linspace(-max_radius, -min_radius, num=gen_n_branches))
   pos_radius = list(np.linspace(min_radius, max_radius, num=gen_n_branches))
   radius = pos_radius + neg_radius
+  print(radius)
 
   # center, infinite turning radius
   x_mid = x + arc_length
@@ -45,6 +46,7 @@ if __name__ == "__main__":
   for r in radius:
     x_r = get_delta_x(r, arc_length) + x
     y_r = get_delta_y(r, arc_length) + y
+    print (x_r, y_r)
     plt.plot(x_r, y_r, 'rx')
 
 
